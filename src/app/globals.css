@@ -1,0 +1,334 @@
+/**
+ * globals.css
+ * ===========
+ * Central design token bridge and base styles for the AI-Native ERP.
+ *
+ * CSS custom properties here are deliberately kept in sync with tailwind.config.js
+ * so that legacy CSS modules (Sidebar.module.css, login.module.css, etc.) that
+ * reference var(--primary), var(--surface), etc. keep working without a rewrite.
+ *
+ * Rule: if you add a new token here, it MUST match a value defined in tailwind.config.js.
+ * Do not invent one-off colors here -- extend the Tailwind config instead.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design Token Bridge (Light Mode defaults) ───────────────────────────── */
+:root {
+  /* Accent / action blue — accent-600 */
+  --primary:        #2563EB;
+  --primary-hover:  #1D4ED8;
+
+  /* Surfaces — light mode */
+  --bg-color:       #F8FAFC; /* neutral-50 */
+  --surface:        #FFFFFF;
+  --border:         #E2E8F0; /* neutral-200 */
+
+  /* Text */
+  --text-main:      #0F172A; /* neutral-900 */
+  --text-muted:     #64748B; /* neutral-500 */
+
+  /* Semantic */
+  --color-success:  #16A34A;
+  --color-warning:  #D97706;
+  --color-danger:   #DC2626;
+}
+
+/* ─── Dark Mode Token Bridge ──────────────────────────────────────────────── */
+.dark {
+  /* App is dark-first; these are the primary active values at runtime */
+  --primary:        #3B82F6; /* accent-500 — slightly lighter for contrast on dark */
+  --primary-hover:  #2563EB; /* accent-600 */
+
+  --bg-color:       #020617; /* neutral-950 — near-black */
+  --surface:        #0F172A; /* neutral-900 */
+  --border:         #1E293B; /* neutral-800 */
+
+  --text-main:      #F1F5F9; /* neutral-100 */
+  --text-muted:     #94A3B8; /* neutral-400 — at least 4.5:1 on neutral-900 bg */
+
+  --color-success:  #4ADE80; /* green-400 — sufficient contrast on dark */
+  --color-warning:  #FBBF24; /* amber-400 */
+  --color-danger:   #F87171; /* red-400 */
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  font-size: 0.9375rem; /* body token */
+  line-height: 1.5;
+}
+
+/* ─── Base Layer — Global Element Defaults ────────────────────────────────── */
+@layer base {
+  /* Consistent focus ring across ALL interactive elements — keyboard nav safety */
+  *:focus-visible {
+    outline: 2px solid #2563EB; /* accent-600 */
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Respect user motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Text selection color */
+  ::selection {
+    background-color: #BFDBFE; /* accent-200 */
+    color: #1E40AF; /* accent-800 */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    ::selection {
+      background-color: #1D4ED8; /* accent-700 */
+      color: #EFF6FF;            /* accent-50 */
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Native <select>/<option> contrast fix (applies to every dropdown in
+   the app -- see globals.css root-cause note in the PR/commit this
+   landed in).
+
+   Root cause: none of this app's ~60 <select> usages set an explicit
+   text color of their own -- they only set a background (many via
+   Tailwind's `dark:bg-*`, which only activates under prefers-color-
+   scheme: dark). With no explicit color, `color: inherit` (set on all
+   form controls by Tailwind's Preflight base reset) pulled in this
+   file's `body { color: var(--text-main) }`, i.e. #f9fafb, a near-white
+   value, UNCONDITIONALLY -- that rule isn't gated by a dark-mode
+   selector at all.
+
+   That's invisible-but-tolerable for the CLOSED <select> box, because
+   its background is a normal paintable page element (white by default,
+   or a component's own dark:bg-* class) -- near-white-on-near-white
+   there just happens to still show *some* box-shadow/border definition.
+
+   It breaks completely for the OPEN option list: browsers render that
+   popup as native OS chrome with its own default (almost always light)
+   background, which does NOT reliably pick up a `dark:bg-*` Tailwind
+   class applied to the <select> element. Near-white inherited text on
+   that native light popup panel is exactly the "first option visible,
+   every other option nearly invisible" symptom -- "first option" is
+   really just the current *selection*, rendered in the closed box's own
+   paintable background, not the popup.
+
+   Confirmed independently: components/dynamic-inventory-form.module.css
+   already had to hand-roll `.select option { background: #1a1a28; color:
+   #f0f0ff; }` as a local fix for exactly this bug on one form -- this
+   block generalizes that same pattern (explicit, paired color +
+   background-color on both select and option, plus color-scheme so the
+   browser's own native chrome, e.g. the popup's scrollbar, matches) to
+   every dropdown in the app in one place, instead of 60 one-off fixes.
+   Low-specificity element selectors (not utility classes) so any
+   component's own Tailwind classes on the <select> itself (e.g.
+   dark:bg-gray-700) still win for the closed box -- this only fills in
+   what nothing was explicitly styling before. */
+@layer base {
+  select {
+    color-scheme: light;
+    color: #111827; /* gray-900 */
+    background-color: #ffffff;
+  }
+
+  select option {
+    color: #111827;
+    background-color: #ffffff;
+  }
+
+  select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    select {
+      color-scheme: dark;
+      color: #f9fafb; /* gray-50, matches --text-main */
+      background-color: #1f2937; /* gray-800 */
+    }
+
+    select option {
+      color: #f9fafb;
+      background-color: #1f2937;
+    }
+  }
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Landing Page Styles */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: radial-gradient(circle at top, #1f2937, #07070e);
+}
+
+.hero h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+  letter-spacing: -0.05em;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  display: inline-block;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  border: 1px solid transparent;
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background-color: var(--surface);
+  transform: translateY(-2px);
+}
+
+/* Dashboard Styles */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+.dashboard-header p {
+  margin: 0.5rem 0 0 0;
+  color: var(--text-muted);
+}
+.back-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.metric-card {
+  background-color: var(--surface);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  transition: transform 0.2s;
+}
+.metric-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+}
+.metric-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.metric-card p {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.activity-card {
+  background-color: var(--surface);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  min-height: 400px;
+}
+.activity-card h2 {
+  margin-top: 0;
+}
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.activity-item:last-child {
+  border-bottom: none;
+}
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: #1e3a8a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.activity-details p {
+  margin: 0;
+}
+.activity-details .time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

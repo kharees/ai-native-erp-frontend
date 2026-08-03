@@ -1,0 +1,35 @@
+# ==============================================================================
+# AI-Native ERP Frontend — .gitignore
+# ==============================================================================
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editors ---
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+tsconfig.tsbuildinfo
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Playwright ---
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
