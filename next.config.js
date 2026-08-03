@@ -2,10 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Produces a minimal, self-contained .next/standalone output (its own
-  // node_modules subset + server.js) for the Docker image — without this,
-  // the production image would need to copy the entire node_modules tree.
-  output: "standalone",
+  // Standalone output is for Docker/Railway-style runs only. On Vercel,
+  // leave the default so the platform's Next.js runtime can apply
+  // routing/ISR/image optimisations correctly.
+  ...(!process.env.VERCEL ? { output: "standalone" } : {}),
 
   /**
    * Enable experimental server actions and partial pre-rendering
@@ -13,7 +13,7 @@ const nextConfig = {
    */
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000"],
+      allowedOrigins: ["localhost:3000", "*.vercel.app"],
     },
   },
 
